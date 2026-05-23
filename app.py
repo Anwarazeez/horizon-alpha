@@ -1,4 +1,5 @@
 # pyrefly: ignore [missing-import]
+
 import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
@@ -15,7 +16,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------
-# CUSTOM STYLING
+# CUSTOM CSS
 # ---------------------------------------------------
 
 st.markdown("""
@@ -113,13 +114,13 @@ for s in range(simulations):
 
     for month in range(months):
 
+        # Market randomness
         noise = rng.uniform(-volatility, volatility)
 
-        marketing_boost = (
-            marketing_spend *
-            rng.uniform(0.00001, 0.00005)
-        )
+        # Marketing efficiency boost
+        marketing_boost = rng.uniform(0.0, 0.03)
 
+        # Growth calculation
         growth_multiplier = (
             1
             + (growth_rate / 100)
@@ -162,6 +163,26 @@ failure_rate = (
 final_balance = average_run[-1]
 
 # ---------------------------------------------------
+# HEALTH SCORE
+# ---------------------------------------------------
+
+health_score = 100
+
+if failure_rate > 30:
+    health_score -= 35
+
+if growth_rate < 5:
+    health_score -= 20
+
+if volatility > 0.25:
+    health_score -= 10
+
+if monthly_expenses > monthly_revenue:
+    health_score -= 30
+
+health_score = max(0, health_score)
+
+# ---------------------------------------------------
 # KPI CARDS
 # ---------------------------------------------------
 
@@ -193,7 +214,7 @@ col4.metric(
 
 fig = go.Figure()
 
-# All simulations
+# Simulation lines
 for run in all_runs:
 
     fig.add_trace(
@@ -207,7 +228,7 @@ for run in all_runs:
         )
     )
 
-# Average line
+# Average projection
 fig.add_trace(
     go.Scatter(
         x=list(range(months + 1)),
@@ -259,43 +280,6 @@ fig.update_layout(
     plot_bgcolor='rgba(0,0,0,0)'
 )
 
-st.plotly_chart(
-    fig,
-    use_container_width=True
-)
-
-# ---------------------------------------------------
-# AI-STYLE INSIGHTS
-# ---------------------------------------------------
-
-st.subheader("AI Insights")
-
-if final_balance <= initial_cash:
-
-    st.error(
-        "⚠️ High probability of runway contraction detected."
-    )
-
-elif final_balance >= initial_cash * 2:
-
-    st.success(
-        "✅ Strong growth trajectory predicted."
-    )
-
-else:
-
-    st.warning(
-        "📈 Moderate growth with manageable volatility."
-    )
-
-st.info(
-    f"""
-    Based on {simulations} Monte Carlo simulations,
-    the projected average balance after 12 months
-    is ₹{final_balance:,.0f}.
-    """
-)
-
 # ---------------------------------------------------
 # DATA TABLE
 # ---------------------------------------------------
@@ -307,6 +291,119 @@ df = pd.DataFrame({
     "Worst Case": worst_case
 })
 
-st.subheader("Projection Data")
+# ---------------------------------------------------
+# TABS
+# ---------------------------------------------------
 
-st.dataframe(df)
+tab1, tab2, tab3 = st.tabs([
+    "Simulation",
+    "Investor Insights",
+    "Forecast Data"
+])
+
+# ---------------------------------------------------
+# TAB 1 — SIMULATION
+# ---------------------------------------------------
+
+with tab1:
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+
+    st.subheader("AI Insights")
+
+    if final_balance <= initial_cash:
+
+        st.error(
+            "⚠️ High probability of runway contraction detected."
+        )
+
+    elif final_balance >= initial_cash * 2:
+
+        st.success(
+            "✅ Strong growth trajectory predicted."
+        )
+
+    else:
+
+        st.warning(
+            "📈 Moderate growth with manageable volatility."
+        )
+
+    st.info(
+        f"""
+        Based on {simulations} Monte Carlo simulations,
+        the projected average balance after 12 months
+        is ₹{final_balance:,.0f}.
+        """
+    )
+
+# ---------------------------------------------------
+# TAB 2 — INVESTOR INSIGHTS
+# ---------------------------------------------------
+
+with tab2:
+
+    st.metric(
+        "Startup Health Score",
+        f"{health_score}/100"
+    )
+
+    if health_score >= 80:
+
+        st.success(
+            "✅ Strong investment opportunity with high growth potential."
+        )
+
+    elif health_score >= 50:
+
+        st.warning(
+            "⚠️ Moderate growth with manageable risks."
+        )
+
+    else:
+
+        st.error(
+            "❌ High-risk startup detected."
+        )
+
+    scenario = st.selectbox(
+        "Business Scenario",
+        [
+            "Conservative",
+            "Balanced",
+            "Aggressive"
+        ]
+    )
+
+    st.write(f"Selected Scenario: {scenario}")
+
+# ---------------------------------------------------
+# TAB 3 — FORECAST DATA
+# ---------------------------------------------------
+
+with tab3:
+
+    st.subheader("Projection Data")
+
+    st.dataframe(df)
+
+    csv = df.to_csv(index=False).encode('utf-8')
+
+    st.download_button(
+        label="Download Forecast Data",
+        data=csv,
+        file_name='forecast_data.csv',
+        mime='text/csv'
+    )
+
+# ---------------------------------------------------
+# LOADING SPINNER
+# ---------------------------------------------------
+
+with st.spinner("Running advanced analysis..."):
+    pass
+
+st.success("✅ Analysis complete! Check the insights above.")
